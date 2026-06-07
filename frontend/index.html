@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIY AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #121810; --surface: #1a2318; --card: #1e2a1c;
+      --border: #2d3f2a; --text: #e8f0e6; --muted: #8ba888;
+      --accent: #5cb85c; --green: #34d399; --amber: #fbbf24; --red: #f87171;
+      --user-bubble: #1e3a2a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "DM Sans", system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); flex-wrap: wrap; gap: 0.5rem; }
+    header h1 { font-size: 1.2rem; font-weight: 600; }
+    .status { font-size: 0.75rem; color: var(--muted); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; }
+    .dot.offline { background: var(--red); }
+    main { flex: 1; max-width: 900px; width: 100%; margin: 0 auto; padding: 0 1rem; display: flex; flex-direction: column; }
+    #chat { flex: 1; overflow-y: auto; padding: 1.25rem 0; display: flex; flex-direction: column; gap: 1rem; min-height: 55vh; }
+    .message.user { align-self: flex-end; max-width: 85%; padding: 0.75rem 1rem; background: var(--user-bubble); border-radius: 14px 14px 4px 14px; }
+    .message.thinking { color: var(--muted); font-style: italic; padding: 0.5rem 0; }
+    .plan { align-self: flex-start; width: 100%; display: flex; flex-direction: column; gap: 0.85rem; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.1rem; }
+    .card h2 { font-size: 1rem; margin-bottom: 0.5rem; color: var(--accent); }
+    .card h3 { font-size: 0.9rem; margin: 0.75rem 0 0.35rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .badge { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 4px; margin-left: 0.35rem; vertical-align: middle; }
+    .badge-easy { background: #064e3b; color: var(--green); }
+    .badge-moderate { background: #78350f; color: var(--amber); }
+    .badge-hard { background: #7f1d1d; color: var(--red); }
+    .step { background: var(--surface); border-radius: 8px; padding: 0.75rem; margin-top: 0.6rem; border-left: 3px solid var(--accent); }
+    .step-title { font-weight: 600; font-size: 0.9rem; }
+    .step-body { font-size: 0.88rem; margin-top: 0.35rem; line-height: 1.45; }
+    .safety { color: var(--amber); font-size: 0.82rem; margin-top: 0.4rem; }
+    .part-row { border-bottom: 1px solid var(--border); padding: 0.85rem 0; }
+    .part-row:last-child { border-bottom: none; }
+    .part-name { font-weight: 600; font-size: 0.92rem; }
+    .part-qty { color: var(--muted); font-size: 0.82rem; }
+    .store-options { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .store-opt { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.85rem; padding: 0.4rem 0.5rem; border-radius: 6px; background: var(--surface); cursor: pointer; }
+    .store-opt:hover { border: 1px solid var(--border); margin: -1px; }
+    .store-opt input { margin-top: 0.2rem; accent-color: var(--accent); }
+    .store-opt.selected { outline: 1px solid var(--accent); }
+    .store-price { color: var(--green); font-weight: 600; margin-left: 0.25rem; }
+    .store-link { color: var(--accent); text-decoration: none; font-size: 0.78rem; margin-left: auto; white-space: nowrap; }
+    .store-link:hover { text-decoration: underline; }
+    .parts-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; }
+    .parts-toolbar select, .parts-toolbar button { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 0.35rem 0.6rem; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
+    .parts-toolbar button { background: var(--accent); color: #fff; border: none; font-weight: 600; }
+    .parts-toolbar button.secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+    ul.tips { margin: 0.4rem 0 0 1.1rem; font-size: 0.85rem; }
+    ul.tips li { margin-bottom: 0.3rem; }
+    .starters { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem 0 1rem; }
+    .starter { background: var(--surface); border: 1px solid var(--border); color: var(--muted); padding: 0.45rem 0.75rem; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
+    .starter:hover { border-color: var(--accent); color: var(--text); }
+    footer { padding: 1rem 0 1.5rem; border-top: 1px solid var(--border); }
+    .store-pref { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; font-size: 0.85rem; color: var(--muted); }
+    .store-pref select { flex: 1; max-width: 280px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 0.4rem 0.6rem; font-family: inherit; font-size: 0.85rem; }
+    .input-row { display: flex; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 0.5rem; }
+    #input { flex: 1; background: transparent; border: none; color: var(--text); font-family: inherit; padding: 0.5rem; resize: none; min-height: 44px; }
+    #input:focus { outline: none; }
+    #send { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 0 1.25rem; font-weight: 600; cursor: pointer; }
+    #send:disabled { opacity: 0.5; cursor: not-allowed; }
+    .card.error { border-color: var(--red); background: #2a1a1a; }
+    .card.error h2 { color: var(--red); }
+    .summary { align-self: flex-start; max-width: 95%; padding: 0.75rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; font-size: 0.92rem; line-height: 1.5; }
+    .shopping-list { margin-top: 0.5rem; }
+    .shop-group { margin-top: 0.75rem; }
+    .shop-group h4 { color: var(--accent); font-size: 0.88rem; margin-bottom: 0.35rem; }
+    .shop-item { font-size: 0.85rem; padding: 0.25rem 0; display: flex; gap: 0.5rem; align-items: baseline; }
+    .substeps { margin: 0.45rem 0 0 1.1rem; font-size: 0.84rem; }
+    .substeps li { margin-bottom: 0.25rem; }
+    .step-tools { margin-top: 0.35rem; font-size: 0.8rem; color: var(--muted); }
+    .exact-product { font-size: 0.82rem; color: var(--green); margin-top: 0.15rem; padding-left: 1.6rem; }
+    .tools-checklist { margin: 0.5rem 0 0 1.25rem; font-size: 0.9rem; line-height: 1.6; }
+    .tools-checklist li { margin-bottom: 0.35rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔧 DIY AI</h1>
+    <div class="status"><span class="dot" id="statusDot"></span> <span id="statusText">…</span></div>
+  </header>
+  <main>
+    <div class="starters" id="starters">
+      <button class="starter" data-prompt="Fix a leaky kitchen faucet">🚿 Leaky faucet</button>
+      <button class="starter" data-prompt="Build a raised garden bed 4 feet by 8 feet">🌱 Garden bed</button>
+      <button class="starter" data-prompt="Patch a medium hole in drywall">🧱 Drywall patch</button>
+    </div>
+    <div id="chat">
+      <div class="card">
+        <p>Describe your project — I'll find <strong>exact parts</strong> at Bunnings / Mitre 10 and give you detailed step-by-step instructions.</p>
+      </div>
+    </div>
+    <footer>
+      <div class="store-pref">
+        <label for="storePref">Shop at:</label>
+        <select id="storePref">
+          <option value="">All stores — compare prices</option>
+        </select>
+      </div>
+      <div class="input-row">
+        <textarea id="input" rows="1" placeholder="e.g. Fix a dripping bathroom faucet"></textarea>
+        <button id="send">Send</button>
+      </div>
+    </footer>
+  </main>
+  <script>
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('input');
+    const send = document.getElementById('send');
+    const statusText = document.getElementById('statusText');
+    const statusDot = document.getElementById('statusDot');
+    const starters = document.getElementById('starters');
+    const storePref = document.getElementById('storePref');
+    let messages = [];
+    let configuredStores = [];
+
+    function populateStoreSelect(stores) {
+      storePref.innerHTML = '<option value="">All stores — compare prices</option>';
+      stores.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        storePref.appendChild(opt);
+      });
+    }
+    async function checkHealth() {
+      try {
+        const d = await (await fetch('/api/health')).json();
+        configuredStores = d.stores || [];
+        populateStoreSelect(configuredStores);
+        const ok = d.ollama_connected && d.ollama_model_available;
+        statusDot.classList.toggle('offline', !ok);
+        if (ok) {
+          statusText.textContent = `v${d.version} · ${d.locale || 'Australia'} · ${d.currency || 'AUD'} · Ollama @ ${d.ollama_url}`;
+        } else if (d.ollama_connected && !d.ollama_model_available) {
+          statusText.textContent = `Ollama connected — model '${d.ollama_model}' missing`;
+        } else {
+          statusText.textContent = 'Ollama offline — edit diy.env OLLAMA_BASE_URL';
+        }
+      } catch {
+        statusText.textContent = 'Offline — run bash start.sh';
+        statusDot.classList.add('offline');
+      }
+    }
+
+    function escAttr(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    }
+
+    function esc(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function storeLinks(o) {
+      let html = '';
+      if (o.url) {
+        html += `<a class="store-link" href="${escAttr(o.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Search store →</a>`;
+      }
+      if (o.product_url) {
+        html += `<a class="store-link" href="${escAttr(o.product_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="margin-left:0.4rem">Product →</a>`;
+      }
+      return html;
+    }
+
+    function badgeClass(d) {
+      if (d === 'easy') return 'badge-easy';
+      if (d === 'moderate') return 'badge-moderate';
+      return 'badge-hard';
+    }
+
+    function partId(planIdx, partIdx) {
+      return `plan-${planIdx}-part-${partIdx}`;
+    }
+
+    function toolLabel(t) {
+      if (typeof t === 'string') return t.trim();
+      if (t && typeof t === 'object') {
+        const name = (t.name || t.item || t.title || '').trim();
+        const specs = (t.specs || t.notes || '').trim();
+        if (name && specs) return `${name} (${specs})`;
+        return name || '';
+      }
+      return String(t || '').trim();
+    }
+
+    function renderToolsCard(plan) {
+      const tools = [...new Set(
+        (plan.parts || [])
+          .filter(p => p.category === 'tool')
+          .map(p => p.name)
+          .filter(Boolean)
+      )];
+      if (!tools.length) return '';
+      let html = `<div class="card"><h2>Tools needed (${tools.length})</h2>`;
+      html += `<p class="meta">Gather these before you start.</p>`;
+      html += `<ol class="tools-checklist">`;
+      tools.forEach(t => { html += `<li>${esc(t)}</li>`; });
+      html += `</ol></div>`;
+      return html;
+    }
+
+    function renderMaterialsCard(plan, planIdx) {
+      const materials = (plan.parts || []).filter(p => (p.category || 'material') !== 'tool');
+      let html = `<div class="card" id="parts-card-${planIdx}"><h2>Parts &amp; materials (${materials.length})</h2>`;
+
+      if (!materials.length) {
+        html += `<p class="meta">No materials listed yet. Try asking again with more detail about your project.</p></div>`;
+        return html;
+      }
+
+      const storeNames = [...new Set(materials.flatMap(p => (p.store_options || []).map(o => o.store)))];
+      if (storeNames.length) {
+        html += `<div class="parts-toolbar">`;
+        html += `<label>Apply store to all: <select id="apply-store-${planIdx}"><option value="">— choose —</option>`;
+        storeNames.forEach(s => { html += `<option value="${esc(s)}">${esc(s)}</option>`; });
+        html += `</select></label>`;
+        html += `<button type="button" class="gen-list-btn" data-plan-idx="${planIdx}">Generate shopping list</button>`;
+        html += `<button type="button" class="secondary copy-list-btn" data-plan-idx="${planIdx}">Copy list</button>`;
+        html += `</div>`;
+      }
+
+      materials.forEach((p, pi) => {
+        const itemName = (p.name || '').trim() || 'Unnamed item';
+        const pid = partId(planIdx, pi);
+        html += `<div class="part-row" data-part-idx="${pi}" data-item-name="${escAttr(itemName)}">`;
+        html += `<div class="part-name">${esc(itemName)} <span class="part-qty">× ${esc(p.quantity || '1')}</span></div>`;
+        if (p.notes) html += `<div class="meta">${esc(p.notes)}</div>`;
+        html += `<div class="store-options">`;
+        if (p.store_options?.length) {
+          p.store_options.forEach((o, oi) => {
+            const checked = oi === 0 ? 'checked' : '';
+            const storeLabel = o.exact_product_name && o.exact_product_name !== itemName
+              ? `${esc(itemName)} — ${esc(o.store)}`
+              : `${esc(itemName)} at ${esc(o.store)}`;
+            html += `<label class="store-opt ${checked ? 'selected' : ''}" data-store="${esc(o.store)}">`;
+            html += `<input type="radio" name="${pid}" value="${oi}" ${checked} data-store="${esc(o.store)}" data-url="${escAttr(o.url)}" data-price="${esc(o.price_hint)}" />`;
+            html += `<span><strong>${storeLabel}</strong><span class="store-price">${esc(o.price_hint)}</span></span>`;
+            html += storeLinks(o);
+            html += `</label>`;
+            if (o.exact_product_name && o.exact_product_name !== itemName) {
+              html += `<div class="exact-product">Store listing: ${esc(o.exact_product_name)}${o.product_id ? ` · #${esc(o.product_id)}` : ''}</div>`;
+            }
+          });
+        } else {
+          html += `<div class="meta">Search your hardware store for: <strong>${esc(itemName)}</strong></div>`;
+        }
+        html += `</div></div>`;
+      });
+
+      html += `<div class="shopping-list" id="shopping-list-${planIdx}" style="display:none"></div>`;
+      html += `</div>`;
+      return html;
+    }
+
+    function renderPlan(plan, planIdx) {
+      if (plan.error) {
+        const title = plan.error.includes('Ollama') ? 'Ollama not ready' : 'Could not build plan';
+        return `<div class="card error"><h2>${esc(title)}</h2><p>${esc(plan.error)}</p></div>`;
+      }
+
+      let html = `<div class="plan" data-plan-idx="${planIdx}">`;
+
+      html += `<div class="card"><h2>${esc(plan.title || 'DIY Plan')}</h2>`;
+      html += `<div class="meta">`;
+      if (plan.difficulty) html += `<span class="badge ${badgeClass(plan.difficulty)}">${esc(plan.difficulty)}</span>`;
+      if (plan.estimated_time) html += ` · ${esc(plan.estimated_time)}`;
+      if (plan.estimated_cost) html += ` · ${esc(plan.estimated_cost)}`;
+      html += `</div></div>`;
+
+      html += renderToolsCard(plan);
+      html += renderMaterialsCard(plan, planIdx);
+
+      if (plan.steps?.length) {
+        html += `<div class="card"><h2>Instructions (${plan.steps.length} steps)</h2>`;
+        plan.steps.forEach(s => {
+          html += `<div class="step"><div class="step-title">${s.order}. ${esc(s.title)}</div>`;
+          html += `<div class="step-body">${esc(s.instructions)}</div>`;
+          if (s.tools?.length) html += `<div class="step-tools"><strong>Tools:</strong> ${esc(s.tools.join(', '))}</div>`;
+          if (s.substeps?.length) {
+            html += `<ul class="substeps">${s.substeps.map(sub => `<li>${esc(sub)}</li>`).join('')}</ul>`;
+          }
+          if (s.safety_note) html += `<div class="safety">⚠ ${esc(s.safety_note)}</div>`;
+          html += `</div>`;
+        });
+        html += `</div>`;
+      }
+
+      if (plan.tips?.length) {
+        html += `<div class="card"><h2>Tips</h2><ul class="tips">`;
+        plan.tips.forEach(t => { html += `<li>${esc(t)}</li>`; });
+        html += `</ul></div>`;
+      }
+
+      html += `</div>`;
+      return html;
+    }
+
+    function wirePlanInteractions(wrap, planIdx) {
+      const applySelect = wrap.querySelector(`#apply-store-${planIdx}`);
+      if (applySelect) {
+        applySelect.onchange = () => {
+          const store = applySelect.value;
+          if (!store) return;
+          wrap.querySelectorAll('.part-row').forEach(row => {
+            const radios = row.querySelectorAll('input[type=radio]');
+            radios.forEach(r => {
+              if (r.dataset.store === store) {
+                r.checked = true;
+                row.querySelectorAll('.store-opt').forEach(l => l.classList.remove('selected'));
+                r.closest('.store-opt')?.classList.add('selected');
+              }
+            });
+          });
+        };
+      }
+
+      wrap.querySelectorAll('.store-opt input[type=radio]').forEach(r => {
+        r.onchange = () => {
+          const row = r.closest('.part-row');
+          row?.querySelectorAll('.store-opt').forEach(l => l.classList.remove('selected'));
+          r.closest('.store-opt')?.classList.add('selected');
+        };
+      });
+
+      const genBtn = wrap.querySelector(`.gen-list-btn[data-plan-idx="${planIdx}"]`);
+      if (genBtn) {
+        genBtn.onclick = () => buildShoppingList(wrap, planIdx);
+      }
+
+      const copyBtn = wrap.querySelector(`.copy-list-btn[data-plan-idx="${planIdx}"]`);
+      if (copyBtn) {
+        copyBtn.onclick = () => {
+          buildShoppingList(wrap, planIdx);
+          const listEl = wrap.querySelector(`#shopping-list-${planIdx}`);
+          const text = listEl?.dataset.plaintext || '';
+          if (text) navigator.clipboard?.writeText(text);
+        };
+      }
+    }
+
+    function buildShoppingList(wrap, planIdx) {
+      const listEl = wrap.querySelector(`#shopping-list-${planIdx}`);
+      if (!listEl) return;
+
+      const byStore = {};
+      wrap.querySelectorAll('.part-row').forEach(row => {
+        const name = row.dataset.itemName || 'Item';
+        const qty = row.querySelector('.part-qty')?.textContent?.replace('×', '').trim() || '1';
+        const checked = row.querySelector('input[type=radio]:checked');
+        if (!checked) return;
+        const store = checked.dataset.store;
+        if (!byStore[store]) byStore[store] = [];
+        byStore[store].push({ name, qty, url: checked.dataset.url, price: checked.dataset.price });
+      });
+
+      let html = '<h3>Your shopping list</h3>';
+      let plain = 'DIY AI Shopping List\n\n';
+      Object.keys(byStore).sort().forEach(store => {
+        html += `<div class="shop-group"><h4>${esc(store)}</h4>`;
+        plain += `${store}\n`;
+        byStore[store].forEach(item => {
+          html += `<div class="shop-item"><span>• ${esc(item.name)} (${esc(item.qty)})</span>`;
+          html += `<span class="store-price">${esc(item.price)}</span>`;
+          if (item.url) html += `<a class="store-link" href="${escAttr(item.url)}" target="_blank" rel="noopener">Search</a>`;
+          html += `</div>`;
+          plain += `  - ${item.name} x${item.qty} ${item.price}${item.url ? ' ' + item.url : ''}\n`;
+        });
+        html += `</div>`;
+        plain += '\n';
+      });
+
+      listEl.innerHTML = html;
+      listEl.dataset.plaintext = plain;
+      listEl.style.display = 'block';
+    }
+
+    function appendUser(text) {
+      const el = document.createElement('div');
+      el.className = 'message user';
+      el.textContent = text;
+      chat.appendChild(el);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function appendSummary(text) {
+      const el = document.createElement('div');
+      el.className = 'summary';
+      el.textContent = text;
+      chat.appendChild(el);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    let planCounter = 0;
+
+    function appendPlan(plan) {
+      const idx = planCounter++;
+      const wrap = document.createElement('div');
+      wrap.innerHTML = renderPlan(plan, idx);
+      chat.appendChild(wrap);
+      wirePlanInteractions(wrap, idx);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function sendMessage(text) {
+      if (!text.trim()) return;
+      starters.style.display = 'none';
+      const store = storePref.value;
+      const display = store ? `${text.trim()} (shop at ${store})` : text.trim();
+      appendUser(display);
+      messages.push({ role: 'user', content: text.trim() });
+      input.value = '';
+      send.disabled = true;
+      const thinking = document.createElement('div');
+      thinking.className = 'message thinking';
+      const baseMsg = store
+        ? `Searching ${store} for parts and writing instructions…`
+        : 'Searching for parts and writing instructions…';
+      thinking.textContent = baseMsg + ' (0s)';
+      chat.appendChild(thinking);
+      const t0 = Date.now();
+      const tick = setInterval(() => {
+        const s = Math.floor((Date.now() - t0) / 1000);
+        thinking.textContent = baseMsg + ` (${s}s — usually 30-90s)`;
+      }, 1000);
+
+      const controller = new AbortController();
+      const clientTimeout = setTimeout(() => controller.abort(), 300000);
+
+      try {
+        const payload = { messages };
+        if (store) payload.preferred_stores = [store];
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+        clearInterval(tick);
+        clearTimeout(clientTimeout);
+        thinking.remove();
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          const detail = err.detail || res.statusText;
+          appendPlan({ error: detail });
+          return;
+        }
+        const data = await res.json();
+        messages.push({ role: 'assistant', content: data.message.content });
+        if (data.message.content) appendSummary(data.message.content);
+        appendPlan(data.plan || { error: 'No plan returned' });
+      } catch (err) {
+        clearInterval(tick);
+        clearTimeout(clientTimeout);
+        thinking.remove();
+        const msg = err.name === 'AbortError'
+          ? 'Request timed out after 5 minutes. Pick one store in the dropdown and try again.'
+          : 'Server offline or unreachable. Run: bash start.sh';
+        appendPlan({ error: msg });
+      } finally {
+        send.disabled = false;
+        input.focus();
+      }
+    }
+
+    send.onclick = () => sendMessage(input.value);
+    input.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input.value); } };
+    starters.onclick = e => { const b = e.target.closest('.starter'); if (b?.dataset.prompt) sendMessage(b.dataset.prompt); };
+    checkHealth();
+    input.focus();
+  </script>
+</body>
+</html>
