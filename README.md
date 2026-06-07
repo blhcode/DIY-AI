@@ -80,7 +80,3 @@ src/
   providers/        # DuckDuckGo search + store URL builders
   planner/models.py # Plan JSON schema
 ```
-
-## License
-
-MIT — use freely for personal projects.
